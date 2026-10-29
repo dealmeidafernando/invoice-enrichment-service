@@ -9,6 +9,8 @@ Registro das decisões técnicas relevantes do serviço. Cada ADR descreve o con
 | [0003](0003-fila-simulada-em-tabela.md) | Fila simulada em tabela no PostgreSQL | Aceito |
 | [0004](0004-transactional-outbox.md) | Transactional Outbox para a mensagem de ida | Aceito |
 | [0005](0005-chave-de-acesso-duplicada.md) | Chave de acesso duplicada | Aceito |
+| [0006](0006-consumo-idempotente.md) | Consumo idempotente da mensagem de volta | Aceito |
+| [0007](0007-contrato-das-mensagens.md) | Contrato das mensagens | Aceito |
 
 ## Modelo
 
