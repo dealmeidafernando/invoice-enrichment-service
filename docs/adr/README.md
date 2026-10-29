@@ -5,6 +5,7 @@ Registro das decisões técnicas relevantes do serviço. Cada ADR descreve o con
 | ADR | Título | Status |
 |---|---|---|
 | [0001](0001-arquitetura-em-camadas-simplificada.md) | Arquitetura em camadas simplificada | Aceito |
+| [0002](0002-testes-de-integracao-com-postgres-real.md) | Testes de integração com PostgreSQL real | Aceito |
 
 ## Modelo
 

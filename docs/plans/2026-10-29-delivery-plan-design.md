@@ -18,29 +18,29 @@ A simple, working solution that is easy to explain. The history is built in smal
 | ADR | Decision |
 |---|---|
 | 0001 | Simplified layered architecture: domain / application / infra / main / shared |
-| 0002 | The queue is simulated with a PostgreSQL table (at-least-once, real redelivery) |
-| 0003 | Transactional Outbox for the outbound message |
-| 0004 | Duplicate key: `UNIQUE` + `ON CONFLICT`; the second request returns 200 with the same invoice |
-| 0005 | Idempotent consumer: inbox (`messageId`) + status guard + row lock |
-| 0006 | Message contracts: versioned envelope; `null` = rejection, malformed = `DEAD` |
-| 0007 | Single process: API and background loops together (compose = API + PostgreSQL) |
-| 0008 | Integration tests against a real PostgreSQL |
+| 0002 | Integration tests against a real PostgreSQL |
+| 0003 | The queue is simulated with a PostgreSQL table (at-least-once, real redelivery) |
+| 0004 | Transactional Outbox for the outbound message |
+| 0005 | Duplicate key: `UNIQUE` + `ON CONFLICT`; the second request returns 200 with the same invoice |
+| 0006 | Idempotent consumer: inbox (`messageId`) + status guard + row lock |
+| 0007 | Message contracts: versioned envelope; `null` = rejection, malformed = `DEAD` |
+| 0008 | Single process: API and background loops together (compose = API + PostgreSQL) |
 
 ## Slices and commits
 
 | # | Content | Commit |
 |---|---|---|
 | 1 | Tooling | `chore: bootstrap NestJS project tooling` |
-| 2 | ADR template/index + ADR 0001 | `docs(adr): add ADR template and 0001 layered architecture` |
-| 3 | Domain + unit tests | `feat(domain): add invoice entity with approval and rejection rules` |
-| 4 | ADR 0008 + schema, migrations, compose (postgres), test setup | `docs(adr): 0008 testing strategy` / `feat(db): add schema, migrations and test database` |
-| 5 | ADR 0002 + 0003 | `docs(adr): 0002 table-backed queue and 0003 transactional outbox` |
-| 6 | Table queue + outbox relay + tests | `feat(messaging): add table queue and outbox relay` |
-| 7 | ADR 0004 | `docs(adr): 0004 duplicate access key handling` |
-| 8 | Register/get invoice + tests | `feat(invoices): register invoice and enqueue enrichment request` |
-| 9 | ADR 0005 + 0006 | `docs(adr): 0005 idempotent consumer and 0006 message contracts` |
-| 10 | Result consumer + fake provider + tests | `feat(enrichment): consume enrichment result and decide invoice` |
-| 11 | ADR 0007 + workers, Dockerfile, compose API | `docs(adr): 0007 single process` / `feat(app): run workers in-process and dockerize API` |
+| 2 | ADR template/index + ADR 0001 | `docs: add ADR template and 0001 layered architecture` |
+| 3 | Domain + unit tests | `feat: add invoice entity with approval and rejection rules` |
+| 4 | ADR 0002 + schema, migrations, compose (postgres), test setup | `docs: 0002 testing strategy` / `feat: add schema, migrations and test database` |
+| 5 | ADR 0003 + 0004 | `docs: 0003 table-backed queue and 0004 transactional outbox` |
+| 6 | Table queue + outbox relay + tests | `feat: add table queue and outbox relay` |
+| 7 | ADR 0005 | `docs: 0005 duplicate access key handling` |
+| 8 | Register/get invoice + tests | `feat: register invoice and enqueue enrichment request` |
+| 9 | ADR 0006 + 0007 | `docs: 0006 idempotent consumer and 0007 message contracts` |
+| 10 | Result consumer + fake provider + tests | `feat: consume enrichment result and decide invoice` |
+| 11 | ADR 0008 + workers, Dockerfile, compose API | `docs: 0008 single process` / `feat: run workers in-process and dockerize API` |
 | 12 | CI | `ci: add GitHub Actions workflow` |
 | 13 | README + AI usage log | `docs: add README and AI usage log` |
 

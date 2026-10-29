@@ -54,7 +54,7 @@ ADR 0001 content:
 - **Consequências:** the domain does not import Nest/pg (ESLint `no-restricted-imports`); repository interfaces live in `domain/repositories`; Nest only appears in application/infra/main.
 
 - [ ] **Step 1:** Write both files.
-- [ ] **Step 2: Commit:** `docs(adr): add ADR template and 0001 layered architecture`
+- [ ] **Step 2: Commit:** `docs: add ADR template and 0001 layered architecture`
 
 ### Task 3: Domain
 
@@ -69,11 +69,11 @@ ADR 0001 content:
 - [ ] **Step 1:** Copy the tests first and run `yarn test:unit`. Expected: FAIL (cannot find module `../../src/domain`).
 - [ ] **Step 2:** Copy the `src/domain` files.
 - [ ] **Step 3:** Run `$CHECK && yarn test:unit`. Expected: 3 suites PASS.
-- [ ] **Step 4: Commit:** `feat(domain): add invoice entity with approval and rejection rules`
+- [ ] **Step 4: Commit:** `feat: add invoice entity with approval and rejection rules`
 
-### Task 4: ADR 0008 + database
+### Task 4: ADR 0002 + database
 
-**ADR `0008-testes-de-integracao-com-postgres-real.md`:**
+**ADR `0002-testes-de-integracao-com-postgres-real.md`:**
 - **Opções:** (a) in-memory repositories + mocks; (b) Testcontainers; (c) real PostgreSQL from docker compose, with a separate database `invoices_test`.
 - **Decisão:** (c), plus pure unit tests for the domain.
 - **Motivo:** the critical rules (unique key under concurrency, `FOR UPDATE`, `SKIP LOCKED`, rollback) only exist in a real database; (b) adds a dependency and is slower to boot; compose is already required.
@@ -159,25 +159,25 @@ describe('Database (real Postgres)', () => {
 - [ ] **Step 1:** `docker compose up -d postgres`. Wait for `docker compose ps` to show it as healthy.
 - [ ] **Step 2:** Add the files and run `$CHECK && yarn test`. Expected: 4 suites PASS (3 unit + database).
 - [ ] **Step 3: Commit (2 commits):**
-  - `git add docs/adr/0008-*` → `docs(adr): 0008 testing strategy with real PostgreSQL`
-  - the rest → `feat(db): add schema, migrations and test database`
+  - `git add docs/adr/0002-*` → `docs: 0002 testing strategy with real PostgreSQL`
+  - the rest → `feat: add schema, migrations and test database`
 
-### Task 5: ADR 0002 + 0003
+### Task 5: ADR 0003 + 0004
 
-**`0002-fila-simulada-em-tabela.md`:**
+**`0003-fila-simulada-em-tabela.md`:**
 - **Opções:** (a) in-memory queue (EventEmitter/array); (b) PostgreSQL table `queue_messages`; (c) a real broker in compose (RabbitMQ).
 - **Decisão:** (b).
 - **Motivo:** the spec requires redelivery in a test. A table gives at-least-once with ack, backoff, visibility timeout and dead-letter, survives restarts and allows several consumers (`FOR UPDATE SKIP LOCKED`). (a) loses messages on restart and does not show redelivery honestly. (c) is out of scope ("barramento gerenciado") and adds infrastructure.
 - **Consequências:** publishing uses its own connection (never the service's transaction), like a real broker. Swapping in a real broker only touches `TableQueue`. Polling adds latency (~500 ms).
 
-**`0003-transactional-outbox.md`:**
+**`0004-transactional-outbox.md`:**
 - **Opções:** (a) publish inside the request after the INSERT; (b) commit, then publish with retry in memory; (c) Transactional Outbox: write the message to `outbox` in the same transaction and let a relay publish it.
 - **Decisão:** (c).
 - **Motivo:** rule "falha ao publicar não pode perder a nota nem aprová-la no request". (a) and (b) can leave the invoice without a message (crash between commit and publish) or fail the request after storing it.
-- **Consequências:** delivery is at-least-once (the relay may publish twice), so the consumer must be idempotent (ADR 0005). The invoice stays in `ANALISE` until the result arrives.
+- **Consequências:** delivery is at-least-once (the relay may publish twice), so the consumer must be idempotent (ADR 0006). The invoice stays in `ANALISE` until the result arrives.
 
 - [ ] **Step 1:** Write both ADRs and update the index in `docs/adr/README.md`.
-- [ ] **Step 2: Commit:** `docs(adr): 0002 table-backed queue and 0003 transactional outbox`
+- [ ] **Step 2: Commit:** `docs: 0003 table-backed queue and 0004 transactional outbox`
 
 ### Task 6: Table queue + outbox relay
 
@@ -191,18 +191,18 @@ describe('Database (real Postgres)', () => {
 - [ ] **Step 1:** Copy the tests and `db.ts`, then run `yarn test:integration`. Expected: FAIL (modules not found).
 - [ ] **Step 2:** Copy the source files.
 - [ ] **Step 3:** Run `$CHECK && yarn test`. Expected: all PASS. Check that the run includes `redelivers the message when the handler fails` and `a publish failure does not lose the message`.
-- [ ] **Step 4: Commit:** `feat(messaging): add table queue and outbox relay`
+- [ ] **Step 4: Commit:** `feat: add table queue and outbox relay`
 
-### Task 7: ADR 0004
+### Task 7: ADR 0005
 
-**`0004-chave-duplicada.md`:**
+**`0005-chave-duplicada.md`:**
 - **Opções:** (a) `SELECT` before `INSERT` in the application; (b) `UNIQUE (access_key)` and return **409 Conflict**; (c) `UNIQUE` + `INSERT ... ON CONFLICT DO NOTHING` and return **200 with the existing invoice** (202 when it was created).
 - **Decisão:** (c).
 - **Motivo:** (a) races under concurrent requests. Between (b) and (c), the client is just resending the same key (a retry after a timeout, for example), so an idempotent answer is more useful than an error. The client gets the id and can follow the status. The database guarantees uniqueness even under concurrency.
 - **Consequências:** the second request writes no new outbound message. 202 and 200 tell "created now" apart from "already existed".
 
 - [ ] **Step 1:** Write the ADR and update the index.
-- [ ] **Step 2: Commit:** `docs(adr): 0004 duplicate access key handling`
+- [ ] **Step 2: Commit:** `docs: 0005 duplicate access key handling`
 
 ### Task 8: Register and get invoice
 
@@ -318,24 +318,24 @@ export async function createTestApp(): Promise<TestApp> {
 - [ ] **Step 2:** Copy the source files and create `app.module.ts`.
 - [ ] **Step 3:** Run `$CHECK && yarn test`. Expected: all PASS. The run includes `creation` (ANALISE, outbound message, 400) and `idempotent intake` (10 concurrent requests → 1 invoice, 1 message).
 - [ ] **Step 4 (optional, manual):** `DATABASE_URL=postgres://invoices:invoices@localhost:5432/invoices WORKERS_ENABLED=false yarn start:dev`, then `curl -i -X POST localhost:3000/invoices -H 'content-type: application/json' -d '{"accessKey":"35261012345678000190550010000000000000000017"}'` → `202`.
-- [ ] **Step 5: Commit:** `feat(invoices): register invoice and enqueue enrichment request`
+- [ ] **Step 5: Commit:** `feat: register invoice and enqueue enrichment request`
 
-### Task 9: ADR 0005 + 0006
+### Task 9: ADR 0006 + 0007
 
-**`0005-consumo-idempotente.md`:**
+**`0006-consumo-idempotente.md`:**
 - **Opções:** (a) status guard only (`WHERE status = 'ANALISE'`); (b) inbox table `processed_messages (consumer, message_id)` only; (c) inbox + status guard + `SELECT ... FOR UPDATE` on the invoice before checking the inbox.
 - **Decisão:** (c).
 - **Motivo:** (a) covers "do not change again" but cannot tell a redelivery from a new message, and gives no audit trail. (b) alone does not stop a second, *different* result for the same key. The lock serializes two parallel deliveries of the same message. The inbox is written in the same transaction as the change, so a failure rolls both back and the redelivery is processed again.
 - **Consequências:** the unknown key is checked **before** the inbox, so nothing is written ("a mensagem de volta não cria nota"). The first result wins and later ones are `IGNORED`.
 
-**`0006-contrato-das-mensagens.md`:**
+**`0007-contrato-das-mensagens.md`:**
 - **Opções:** (a) bare payload; (b) envelope `{ messageId, type, version, occurredAt, correlationId, payload }`. For missing fields: (i) treat as contract error; (ii) `null` = valid result, rejected with a reason.
 - **Decisão:** (b) + (ii). `amount` is a decimal string, `issueDate` is ISO 8601, `canceled` is required. A malformed message (wrong type, unreadable date, unknown version) is non-retryable and goes straight to `DEAD`.
-- **Motivo:** `messageId` is what makes dedup possible (ADR 0005). `version` allows evolving the contract. The spec says "sem esses dados vai para REJEITADA e grava o motivo", so missing data is a business outcome, not an error. Retrying a malformed message would never help. An amount as a string avoids float precision loss.
+- **Motivo:** `messageId` is what makes dedup possible (ADR 0006). `version` allows evolving the contract. The spec says "sem esses dados vai para REJEITADA e grava o motivo", so missing data is a business outcome, not an error. Retrying a malformed message would never help. An amount as a string avoids float precision loss.
 - **Consequências:** validation uses zod in `infra/messaging`; the reasons are `INVOICE_CANCELED`, `MISSING_CNPJ`, `MISSING_AMOUNT`, `MISSING_ISSUE_DATE` (all of them are stored, not only the first).
 
 - [ ] **Step 1:** Write both ADRs and update the index.
-- [ ] **Step 2: Commit:** `docs(adr): 0005 idempotent consumer and 0006 message contracts`
+- [ ] **Step 2: Commit:** `docs: 0006 idempotent consumer and 0007 message contracts`
 
 ### Task 10: Enrichment result consumer
 
@@ -351,11 +351,11 @@ export async function createTestApp(): Promise<TestApp> {
 - [ ] **Step 1:** Copy the tests and run `yarn test`. Expected: FAIL (modules not found).
 - [ ] **Step 2:** Copy the source files and edit `app.module.ts`.
 - [ ] **Step 3:** Run `$CHECK && yarn test`. Expected: all PASS. The run includes `the same inbound message delivered twice changes the invoice only once`, the parallel variant, `unknown key ... (not even the inbox)` and `invalid contract goes to DEAD`.
-- [ ] **Step 4: Commit:** `feat(enrichment): consume enrichment result and decide invoice`
+- [ ] **Step 4: Commit:** `feat: consume enrichment result and decide invoice`
 
-### Task 11: ADR 0007 + workers and Docker
+### Task 11: ADR 0008 + workers and Docker
 
-**`0007-processo-unico.md`:**
+**`0008-processo-unico.md`:**
 - **Opções:** (a) API and background loops in one process; (b) separate `worker` container from the same image (`APP_ROLE`); (c) Nest microservices / `@nestjs/schedule`.
 - **Decisão:** (a), with `WORKERS_ENABLED` and `SIMULATE_PROVIDER` flags.
 - **Motivo:** the spec asks for compose with "a API e o PostgreSQL" and allows simulating the queue "no próprio processo". One process is simpler to run and explain. `SKIP LOCKED` already makes several replicas safe. (c) adds a dependency for a 20-line loop.
@@ -373,8 +373,8 @@ export async function createTestApp(): Promise<TestApp> {
   ```
   Expected: `ANALISE`, then `APROVADA` with `approvedAt`.
 - [ ] **Step 3: Commit (2 commits):**
-  - `docs(adr): 0007 single process for API and workers`
-  - `feat(app): run workers in-process and dockerize the API`
+  - `docs: 0008 single process for API and workers`
+  - `feat: run workers in-process and dockerize the API`
 
 ### Task 12: CI
 
