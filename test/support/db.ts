@@ -1,4 +1,6 @@
+import { randomUUID } from 'node:crypto';
 import { Pool } from 'pg';
+import { Envelope } from '../../src/application/contracts/messages';
 
 export function testDatabaseUrl(): string {
   const url = process.env.DATABASE_URL_TEST;
@@ -17,6 +19,17 @@ export function createTestPool(): Pool {
 
 export async function cleanDatabase(pool: Pool): Promise<void> {
   await pool.query('TRUNCATE invoices, outbox, queue_messages, processed_messages RESTART IDENTITY');
+}
+
+export function envelope<T>(type: string, payload: T): Envelope<T> {
+  return {
+    messageId: randomUUID(),
+    type,
+    version: 1,
+    occurredAt: new Date().toISOString(),
+    correlationId: randomUUID(),
+    payload,
+  };
 }
 
 export const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
