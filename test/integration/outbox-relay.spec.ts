@@ -31,6 +31,7 @@ describe('OutboxRelay (real Postgres)', () => {
     return env;
   };
 
+  // Complements required test 1 — the outbound message leaves the outbox and reaches the queue
   it('publishes pending messages and marks them PUBLISHED', async () => {
     const env = await writeToOutbox();
 

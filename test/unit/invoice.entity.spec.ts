@@ -42,6 +42,7 @@ describe('Invoice', () => {
   });
 
   describe('approval', () => {
+    // Complements required test 2 — approval only with CNPJ, amount and issue date, not canceled
     it('approves when the result has CNPJ, amount and issue date and is not canceled', () => {
       const invoice = newInvoice();
       const decision = invoice.applyResult(result(), PROCESSED_AT);
@@ -56,6 +57,7 @@ describe('Invoice', () => {
   });
 
   describe('rejection', () => {
+    // Complements required test 3 — every combination of canceled / missing data
     it.each<[string, Partial<EnrichmentResult>, RejectionReason[]]>([
       ['canceled', { canceled: true }, [RejectionReason.INVOICE_CANCELED]],
       ['without CNPJ', { cnpj: null }, [RejectionReason.MISSING_CNPJ]],

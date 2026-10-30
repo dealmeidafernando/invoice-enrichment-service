@@ -19,6 +19,7 @@ describe('Database (real Postgres)', () => {
     db.query(`INSERT INTO invoices (id, access_key, status) VALUES ($1, $2, 'ANALISE')`, [randomUUID(), key]);
   const countInvoices = async () => (await pool.query(`SELECT count(*)::int AS n FROM invoices`)).rows[0].n;
 
+  // Complements required test 4 — the database itself refuses a second invoice for the same key
   it('refuses a second invoice with the same access key', async () => {
     const key = newAccessKey();
     await insert(key);
@@ -27,7 +28,9 @@ describe('Database (real Postgres)', () => {
 
   it('refuses APROVADA without an approval date (invariant repeated in the schema)', async () => {
     await insert(newAccessKey());
-    await expect(pool.query(`UPDATE invoices SET status = 'APROVADA'`)).rejects.toThrow(/ck_invoices_approval/);
+    await expect(pool.query(`UPDATE invoices SET status = 'APROVADA'`)).rejects.toThrow(
+      /ck_invoices_approval/,
+    );
   });
 
   it('rolls back everything written inside a failed transaction', async () => {

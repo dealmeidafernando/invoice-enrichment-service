@@ -38,6 +38,7 @@ describe('Table queue (real Postgres)', () => {
     expect((await stateOf(msg.messageId))[0].status).toBe('DONE');
   });
 
+  // Complements required test 5 — a failed delivery comes back (redelivery)
   it('redelivers the message when the handler fails', async () => {
     const msg = envelope(TOPIC, {});
     await queue.publish(TOPIC, msg);
@@ -163,6 +164,7 @@ describe('Table queue (real Postgres)', () => {
     expect(new Set(processed).size).toBe(total);
   });
 
+  // Complements required test 5 — the queue really delivers the same message twice
   it('the same message published twice becomes two deliveries (at-least-once)', async () => {
     const msg = envelope(TOPIC, {});
     await queue.publish(TOPIC, msg);

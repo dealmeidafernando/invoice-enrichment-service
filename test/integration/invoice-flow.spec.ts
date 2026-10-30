@@ -27,6 +27,7 @@ describe('Invoice flow (API + real Postgres)', () => {
     ).rows.map((r) => r.status);
 
   describe('creation', () => {
+    // Required test 1 — "a criação da nota em ANALISE e a mensagem de ida"
     it('stores the invoice in ANALISE, with no approval date, and returns 202 with Location', async () => {
       const key = newAccessKey();
       const res = await register(key).expect(202);
@@ -41,6 +42,7 @@ describe('Invoice flow (API + real Postgres)', () => {
       expect(await getInvoice(res.body.id)).toMatchObject({ status: 'ANALISE', approvedAt: null });
     });
 
+    // Required test 1 — "a criação da nota em ANALISE e a mensagem de ida"
     it('writes the outbound message to the outbox in the same request, and the relay publishes it', async () => {
       const key = newAccessKey();
       const res = await register(key).set('x-correlation-id', 'corr-123').expect(202);
@@ -79,6 +81,7 @@ describe('Invoice flow (API + real Postgres)', () => {
   });
 
   describe('approval', () => {
+    // Required test 2 — "a aprovação só depois de um resultado completo"
     it('stays in ANALISE while the provider has not answered', async () => {
       const res = await register(newAccessKey()).expect(202);
       await t.runRelay();
@@ -86,6 +89,7 @@ describe('Invoice flow (API + real Postgres)', () => {
       expect(await getInvoice(res.body.id)).toMatchObject({ status: 'ANALISE', approvedAt: null });
     });
 
+    // Required test 2 — "a aprovação só depois de um resultado completo"
     it('moves to APROVADA with an approval date after a complete result', async () => {
       const res = await register(newAccessKey()).expect(202);
       await t.runFullFlow();
@@ -103,6 +107,7 @@ describe('Invoice flow (API + real Postgres)', () => {
   });
 
   describe('rejection', () => {
+    // Required test 3 — "a rejeição quando o resultado vem cancelado ou incompleto"
     it('a canceled result moves to REJEITADA with reason INVOICE_CANCELED', async () => {
       const key = newAccessKey();
       t.provider.respondWith(key, { canceled: true });
@@ -116,6 +121,7 @@ describe('Invoice flow (API + real Postgres)', () => {
       });
     });
 
+    // Required test 3 — "a rejeição quando o resultado vem cancelado ou incompleto"
     it.each([
       ['CNPJ', { cnpj: null }, ['MISSING_CNPJ']],
       ['amount', { amount: null }, ['MISSING_AMOUNT']],
@@ -143,6 +149,7 @@ describe('Invoice flow (API + real Postgres)', () => {
   });
 
   describe('idempotent intake', () => {
+    // Required test 4 — "duas requisições com a mesma chave"
     it('concurrent requests with the same key create one invoice and one outbound message', async () => {
       const key = newAccessKey();
       const responses = await Promise.all(Array.from({ length: 10 }, () => register(key)));
@@ -155,6 +162,7 @@ describe('Invoice flow (API + real Postgres)', () => {
       expect(await count('outbox')).toBe(1);
     });
 
+    // Required test 4 — "duas requisições com a mesma chave"
     it('a second request returns 200 with the same invoice, even after it was decided', async () => {
       const key = newAccessKey();
       const first = await register(key).expect(202);
@@ -167,24 +175,31 @@ describe('Invoice flow (API + real Postgres)', () => {
   });
 
   describe('idempotent consumption (redelivery)', () => {
+    // Required test 5 — "a mesma mensagem de volta entregue duas vezes"
     it('the same inbound message delivered twice changes the invoice only once', async () => {
       const key = newAccessKey();
       const res = await register(key).expect(202);
-      const result = await t.provider.publishResult(key);
-      await t.queue.publish(TOPIC_ENRICHMENT_COMPLETED, result); // broker redelivers the same messageId
       const spy = jest.spyOn(t.app.get(ProcessEnrichmentResultUseCase), 'execute');
 
-      expect(await t.runConsumer()).toEqual({ completed: 2, rescheduled: 0, dead: 0 });
+      // First delivery: the provider's result approves the invoice.
+      const result = await t.provider.publishResult(key);
+      await t.runConsumer();
+      const approved = await getInvoice(res.body.id);
+      expect(approved.status).toBe('APROVADA');
+
+      // Second delivery: the broker redelivers exactly the same envelope (same messageId).
+      await t.queue.publish(TOPIC_ENRICHMENT_COMPLETED, result);
+      expect(await t.runConsumer()).toEqual({ completed: 1, rescheduled: 0, dead: 0 });
 
       expect(await Promise.all(spy.mock.results.map((r) => r.value))).toEqual(['APPROVED', 'DUPLICATE']);
-      const invoice = await getInvoice(res.body.id);
-      expect(invoice.status).toBe('APROVADA');
+      expect(await getInvoice(res.body.id)).toEqual(approved); // nothing changed, not even approvedAt
       expect(await count('processed_messages')).toBe(1);
     });
 
+    // Required test 5 — "a mesma mensagem de volta entregue duas vezes"
     it('the same inbound message delivered twice in parallel changes the invoice only once', async () => {
       const key = newAccessKey();
-      await register(key).expect(202);
+      const res = await register(key).expect(202);
       const result = await t.provider.publishResult(key);
       await t.queue.publish(TOPIC_ENRICHMENT_COMPLETED, result);
       const spy = jest.spyOn(t.app.get(ProcessEnrichmentResultUseCase), 'execute');
@@ -198,6 +213,8 @@ describe('Invoice flow (API + real Postgres)', () => {
 
       const outcomes = await Promise.all(spy.mock.results.map((r) => r.value));
       expect(outcomes.sort()).toEqual(['APPROVED', 'DUPLICATE']);
+      expect(await getInvoice(res.body.id)).toMatchObject({ status: 'APROVADA' });
+      expect(await count('processed_messages')).toBe(1);
     });
 
     it('a second, different result for the same key is ignored (terminal status)', async () => {
