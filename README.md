@@ -1,6 +1,11 @@
 # Invoice Enrichment Service
 
 [![CI](https://github.com/dealmeidafernando/invoice-enrichment-service/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/dealmeidafernando/invoice-enrichment-service/actions/workflows/ci.yml)
+![Node.js](https://img.shields.io/badge/Node.js-22-5FA04E?logo=nodedotjs&logoColor=white)
+![NestJS](https://img.shields.io/github/package-json/dependency-version/dealmeidafernando/invoice-enrichment-service/@nestjs/core?logo=nestjs&label=NestJS)
+![TypeScript](https://img.shields.io/github/package-json/dependency-version/dealmeidafernando/invoice-enrichment-service/dev/typescript?logo=typescript&label=TypeScript)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white)
+![Docker Compose](https://img.shields.io/badge/Docker_Compose-ready-2496ED?logo=docker&logoColor=white)
 
 Intake and enrichment pipeline for Brazilian electronic invoices (NF-e), built as a technical challenge.
 
