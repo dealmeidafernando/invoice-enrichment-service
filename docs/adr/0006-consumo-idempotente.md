@@ -5,7 +5,7 @@
 
 ## Contexto
 
-O enunciado diz que **a resposta do provedor pode chegar mais de uma vez** e que **a mesma mensagem de volta, entregue de novo, não muda a nota outra vez**. O mesmo vale para a nossa fila (ADR 0003) e para o outbox (ADR 0004): os dois são *at-least-once*.
+O enunciado diz que **a resposta do provedor pode chegar mais de uma vez** e que **a mesma mensagem de volta, entregue de novo, não muda a nota outra vez**. O mesmo vale para a nossa fila (ADR 0003) e para o outbox (ADR 0004): os dois são _at-least-once_.
 
 Três situações diferentes precisam ser tratadas:
 

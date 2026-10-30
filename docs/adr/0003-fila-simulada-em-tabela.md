@@ -7,7 +7,7 @@
 
 O serviço conversa com o provedor externo por mensagens. Uma vai (pedido de enriquecimento) e outra volta (resultado). O enunciado deixa barramento gerenciado fora do escopo e permite simular a fila "no próprio processo ou com uma tabela, desde que a reentrega exista num teste".
 
-A resposta do provedor pode chegar mais de uma vez. Para ser um teste fiel, a fila simulada precisa se comportar como um broker real: entrega *at-least-once*, ack depois do processamento e reentrega quando o processamento falha.
+A resposta do provedor pode chegar mais de uma vez. Para ser um teste fiel, a fila simulada precisa se comportar como um broker real: entrega _at-least-once_, ack depois do processamento e reentrega quando o processamento falha.
 
 ## Opções avaliadas
 

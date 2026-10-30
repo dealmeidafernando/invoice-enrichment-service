@@ -23,9 +23,9 @@ O enunciado pede um `docker compose` que suba "a API e o PostgreSQL" e permite s
 
 Opção 1: um processo só, com duas flags.
 
-| Variável | Padrão | Função |
-|---|---|---|
-| `WORKERS_ENABLED` | `true` | liga o relay do outbox e o consumidor do resultado |
+| Variável            | Padrão  | Função                                                     |
+| ------------------- | ------- | ---------------------------------------------------------- |
+| `WORKERS_ENABLED`   | `true`  | liga o relay do outbox e o consumidor do resultado         |
 | `SIMULATE_PROVIDER` | `false` | liga o provedor simulado; o compose usa `true` para a demo |
 
 ## Motivo

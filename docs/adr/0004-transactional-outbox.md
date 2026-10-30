@@ -28,6 +28,6 @@ Opção 3: Transactional Outbox, com o `OutboxRelay` rodando em segundo plano.
 
 ## Consequências
 
-- A entrega é *at-least-once*: se o relay publica e cai antes de marcar `PUBLISHED`, a mensagem sai de novo. Por isso o consumidor precisa ser idempotente (ADR 0006).
+- A entrega é _at-least-once_: se o relay publica e cai antes de marcar `PUBLISHED`, a mensagem sai de novo. Por isso o consumidor precisa ser idempotente (ADR 0006).
 - Existe uma latência pequena entre o request e a publicação, de um ciclo do relay.
 - O repositório de outbox exige uma transação aberta e falha se for chamado fora dela, para evitar uso incorreto.

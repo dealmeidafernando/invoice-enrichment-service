@@ -30,11 +30,11 @@ Duas perguntas precisam de resposta:
 
 Constraint `UNIQUE` + `INSERT ... ON CONFLICT DO NOTHING`, e **resposta idempotente**:
 
-| Situação | Status | Corpo |
-|---|---|---|
-| Chave nova | `202 Accepted` + `Location` | nota em `ANALISE` |
-| Chave já registrada | `200 OK` + `Location` | a mesma nota, no status atual |
-| Chave inválida | `400 Bad Request` | `code: INVALID_ACCESS_KEY` |
+| Situação            | Status                      | Corpo                         |
+| ------------------- | --------------------------- | ----------------------------- |
+| Chave nova          | `202 Accepted` + `Location` | nota em `ANALISE`             |
+| Chave já registrada | `200 OK` + `Location`       | a mesma nota, no status atual |
+| Chave inválida      | `400 Bad Request`           | `code: INVALID_ACCESS_KEY`    |
 
 ## Motivo
 
