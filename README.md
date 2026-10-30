@@ -443,7 +443,7 @@ I used Claude Code as an implementation, review and testing partner. It generate
 
 **Decisions.** Every technical decision is recorded in [docs/adr](docs/adr/README.md), in PT-BR to help other developers understand them easily, with the options considered, the one chosen and why. Among them: a simplified layered architecture instead of full Clean Architecture, the table-backed queue, the transactional outbox, answering `200` to a repeated key, and the idempotent consumer.
 
-**What the validation caught.**
+**What I corrected.**
 
 - The generated Jest config referenced a `globalSetup` file that did not exist yet, so the suite failed before running any test. Fixed by adding the integration project only together with the database.
 - Supertest opened one server per request and raised `MaxListenersExceededWarning` in the 10-concurrent-requests test. Fixed by making the test app listen once.
