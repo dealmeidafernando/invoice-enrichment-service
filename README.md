@@ -10,7 +10,7 @@ A client sends the 44-digit **access key** of an invoice. The invoice is born in
 - guarantees **one invoice per key**, even with concurrent requests
 - processes each result **once**, even when the same message is delivered again
 
-The provider is simulated, and the message queue is a PostgreSQL table with real redelivery. Every technical decision, with the options considered and why: [docs/adr](docs/adr/README.md).
+The provider is simulated, and the message queue is a PostgreSQL table with real redelivery. Every technical decision, with the options considered and why: [docs/adr](docs/adr/README.md). The tests required by the challenge and where each one is: [§5.1](#51-required-tests).
 
 ## Development
 
@@ -21,6 +21,7 @@ The provider is simulated, and the message queue is a PostgreSQL table with real
 | Node.js                 | 22+ (pinned in `.nvmrc`) | [nvm](https://github.com/nvm-sh/nvm) → `nvm install && nvm use` |
 | Yarn                    | 1.22+                    | `npm install -g yarn`                                           |
 | Docker + Docker Compose | Docker 24+, Compose v2+  | [Docker Desktop](https://docs.docker.com/get-docker/)           |
+| Make                    | any                      | preinstalled on macOS/Linux                                     |
 
 Stack: Node.js, NestJS 11, TypeScript, PostgreSQL 16, Docker.
 
@@ -35,14 +36,22 @@ git clone git@github.com:dealmeidafernando/invoice-enrichment-service.git
 cd invoice-enrichment-service
 ```
 
-### 1.2. Run the application
+### 1.2. Install and configure
+
+```bash
+make setup    # yarn install + creates .env from .env.example
+```
+
+`.env` only holds local development values; it is git-ignored. It is needed only to run the API outside Docker (`make dev`).
+
+### 1.3. Run the application
 
 With Docker (API + PostgreSQL, with the simulated provider turned on):
 
 ```bash
-docker compose up --build -d   # API on http://localhost:3000 · PostgreSQL on :5432
-docker compose logs -f api     # follow the API logs
-docker compose down            # stop everything (add -v to also wipe the database)
+make up       # API on http://localhost:3000 · PostgreSQL on :5432
+make logs     # follow the API logs
+make down     # stop everything (make reset also wipes the database)
 ```
 
 The API applies the database migrations on startup.
@@ -50,24 +59,28 @@ The API applies the database migrations on startup.
 Or without Docker for the API (PostgreSQL still comes from compose):
 
 ```bash
-yarn install
-docker compose up -d postgres
-cp .env.example .env
-set -a && . ./.env && set +a   # load the variables into the shell
-SIMULATE_PROVIDER=true yarn start:dev
+make dev      # starts PostgreSQL, loads .env and runs the API with the simulated provider
 ```
 
-### 1.3. Testing if it's okay
+### 1.4. Testing if it's okay
 
 ```bash
-curl localhost:3000/health
+make healthcheck
 ```
 
 ```json
 { "status": "ok", "database": "ok" }
 ```
 
-Then send an invoice (sample key with a valid check digit) and read it back a second later:
+Then play the full flow with a fresh access key:
+
+```bash
+make demo
+```
+
+It registers the invoice (`202`, `"status":"ANALISE"`), waits two seconds for the simulated provider and reads it back as `APROVADA`, with CNPJ, amount, issue date and `approvedAt`. Then it sends the same key again and gets `200`.
+
+The same by hand, with `curl`:
 
 ```bash
 curl -i -X POST localhost:3000/invoices \
@@ -77,26 +90,46 @@ curl -i -X POST localhost:3000/invoices \
 curl localhost:3000/invoices/<id from the response>
 ```
 
-The first call returns `202` with `"status":"ANALISE"`. About a second later, the simulated provider has answered and the invoice is `APROVADA`, with CNPJ, amount, issue date and `approvedAt`. Sending the same key again returns `200` with the same invoice.
-
 To generate other valid keys, use `generateAccessKey(n)` in [`test/support/access-keys.ts`](test/support/access-keys.ts).
 
 ---
 
-## 2. Commands
+## 2. Make Commands
 
-|                     Command | Execute                                               |
-| --------------------------: | :---------------------------------------------------- |
-| `docker compose up --build` | Build and start API + PostgreSQL                      |
-|            `yarn start:dev` | Run the API locally (needs the variables in `.env`)   |
-|                `yarn build` | Compile TypeScript to `dist/` (with the migrations)   |
-|                `yarn start` | Run the compiled API                                  |
-|                 `yarn test` | Run all tests (needs PostgreSQL, see [§5](#5-tests))  |
-|            `yarn test:unit` | Run unit tests (no database)                          |
-|     `yarn test:integration` | Run integration tests (real PostgreSQL)               |
-|                 `yarn lint` | Lint the code                                         |
-|            `yarn typecheck` | Type-check without emitting                           |
-|               `yarn format` | Format with Prettier                                  |
+Run `make help` to list them all. Each one wraps a `yarn` or `docker compose` command, so they can also be run directly.
+
+### 2.1. Main commands
+
+|            Command | Execute                                                          |
+| -----------------: | :--------------------------------------------------------------- |
+|       `make setup` | Install dependencies and create `.env`                           |
+|          `make up` | Build and start API + PostgreSQL (Docker), waiting until healthy |
+|        `make down` | Stop the containers                                              |
+|       `make reset` | Stop the containers and wipe the database volume                 |
+|        `make logs` | Follow the API logs                                              |
+|          `make db` | Start only PostgreSQL                                            |
+|         `make dev` | Run the API locally against the PostgreSQL container             |
+| `make healthcheck` | Call `GET /health`                                               |
+|        `make demo` | Register a new invoice and show it before and after the provider |
+
+### 2.2. Quality commands
+
+|                 Command | Execute                                              |
+| ----------------------: | :--------------------------------------------------- |
+|             `make test` | Run all tests (starts PostgreSQL if needed)          |
+|        `make test-unit` | Run unit tests (no database)                         |
+| `make test-integration` | Run integration tests (starts PostgreSQL if needed)  |
+|            `make check` | Lint, typecheck and all tests, the same checks as CI |
+|             `make lint` | Lint the code                                        |
+|        `make typecheck` | Type-check without emitting                          |
+|           `make format` | Format with Prettier                                 |
+
+### 2.3. Others
+
+|      Command | Execute                                             |
+| -----------: | :-------------------------------------------------- |
+| `make build` | Compile TypeScript to `dist/` (with the migrations) |
+| `make clean` | Remove `dist/` and `coverage/`                      |
 
 ---
 
@@ -243,14 +276,17 @@ Both messages share one envelope. `messageId` is the identity of the message: a 
   "version": 1,
   "occurredAt": "2026-10-29T22:50:00.000Z",
   "correlationId": "uuid", // from the x-correlation-id header of the POST
-  "payload": {}
+  "payload": {},
 }
 ```
 
 **Outbound: `invoice.enrichment.requested`** (service → provider)
 
 ```json
-{ "invoiceId": "83377e99-adf5-429c-8020-bc6c354d417b", "accessKey": "35261012345678000190550010000000000000000017" }
+{
+  "invoiceId": "83377e99-adf5-429c-8020-bc6c354d417b",
+  "accessKey": "35261012345678000190550010000000000000000017"
+}
 ```
 
 **Inbound: `invoice.enrichment.completed`** (provider → service)
@@ -281,17 +317,21 @@ A `null` field is a valid result: the invoice is rejected with a reason. A malfo
 
 Integration tests run against a real PostgreSQL ([ADR 0002](docs/adr/0002-testes-de-integracao-com-postgres-real.md)), in a separate `invoices_test` database created by compose:
 
+| Command                 | Runs                                             |
+| ----------------------- | ------------------------------------------------ |
+| `make test`             | all tests                                        |
+| `make test-unit`        | domain and message contract, no database         |
+| `make test-integration` | full flow over HTTP, queue, outbox relay, schema |
+
+`make test` and `make test-integration` start PostgreSQL if needed and set `DATABASE_URL_TEST`. Without Make:
+
 ```bash
-yarn install
 docker compose up -d postgres
 export DATABASE_URL_TEST=postgres://invoices:invoices@localhost:5432/invoices_test
-
-yarn test                  # everything
-yarn test:unit             # domain and message contract, no database
-yarn test:integration      # full flow over HTTP, queue, outbox relay, schema
+yarn test
 ```
 
-Run **one** test file, or one test by name:
+Run **one** test file, or one test by name (with `DATABASE_URL_TEST` set):
 
 ```bash
 yarn jest test/integration/invoice-flow.spec.ts
@@ -300,16 +340,32 @@ yarn jest -t "delivered twice"
 
 The background loops are turned off in tests: each test moves relay → provider → consumer by hand, so it is deterministic. The provider is simulated by [`FakeProvider`](src/infra/messaging/fake-provider.ts), which publishes the result message.
 
-| Required by the challenge                                  | Where                                                         |
-| ---------------------------------------------------------- | ------------------------------------------------------------- |
-| Invoice created in `ANALISE` and the outbound message      | `invoice-flow.spec.ts` › creation                             |
-| Approval only after a complete result                      | `invoice-flow.spec.ts` › approval · `invoice.entity.spec.ts`  |
-| Rejection when the result is canceled or incomplete        | `invoice-flow.spec.ts` › rejection · `invoice.entity.spec.ts` |
-| Two requests with the same key (also 10 concurrent)        | `invoice-flow.spec.ts` › idempotent intake                    |
-| The same result message delivered twice (also in parallel) | `invoice-flow.spec.ts` › idempotent consumption               |
-| Unknown key: consumption ends without writing              | `invoice-flow.spec.ts` › idempotent consumption               |
-| Publish failure neither loses nor approves the invoice     | `invoice-flow.spec.ts` › failures · `outbox-relay.spec.ts`    |
-| Redelivery after a processing failure                      | `invoice-flow.spec.ts` › failures · `table-queue.spec.ts`     |
+### 5.1. Required tests
+
+Each item of "Nos testes, mostre" has a main end-to-end test (HTTP + PostgreSQL + queue) and a narrower test that complements it. In the code, they are marked with `// Required test N` and `// Complements required test N`:
+
+```bash
+grep -rni "required test" test
+```
+
+| #   | Item do enunciado                                         | Main test ([`invoice-flow.spec.ts`](test/integration/invoice-flow.spec.ts))                                                                            | Complement                                                                                                                                  |
+| --- | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | a criação da nota em `ANALISE` e a mensagem de ida        | `stores the invoice in ANALISE, with no approval date…` · `writes the outbound message to the outbox in the same request…`                             | [`outbox-relay.spec.ts`](test/integration/outbox-relay.spec.ts): the relay publishes the outbox message to the queue                        |
+| 2   | a aprovação só depois de um resultado completo            | `stays in ANALISE while the provider has not answered` · `moves to APROVADA with an approval date after a complete result`                             | [`invoice.entity.spec.ts`](test/unit/invoice.entity.spec.ts): approval rule, no database                                                    |
+| 3   | a rejeição quando o resultado vem cancelado ou incompleto | `a canceled result moves to REJEITADA…` · `a result missing CNPJ / amount / issue date / everything…`                                                  | [`invoice.entity.spec.ts`](test/unit/invoice.entity.spec.ts): every combination of reasons                                                  |
+| 4   | duas requisições com a mesma chave                        | `concurrent requests with the same key create one invoice and one outbound message` (10 requests with `Promise.all`) · `a second request returns 200…` | [`database.spec.ts`](test/integration/database.spec.ts): the `UNIQUE` constraint refuses a second invoice                                   |
+| 5   | a mesma mensagem de volta entregue duas vezes             | `the same inbound message delivered twice changes the invoice only once` (same envelope republished) · `…delivered twice in parallel…`                 | [`table-queue.spec.ts`](test/integration/table-queue.spec.ts): the queue really delivers a message twice, and redelivers it after a failure |
+
+### 5.2. Other rules covered
+
+| Rule                                                     | Where                                                                     |
+| -------------------------------------------------------- | ------------------------------------------------------------------------- |
+| Invalid access key: `400`, nothing written               | `invoice-flow.spec.ts` › creation · `access-key.spec.ts`                  |
+| The result never creates an invoice (unknown key)        | `invoice-flow.spec.ts` › idempotent consumption                           |
+| A second, different result is ignored (terminal status)  | `invoice-flow.spec.ts` › idempotent consumption                           |
+| Publish failure neither loses nor approves the invoice   | `invoice-flow.spec.ts` › failures · `outbox-relay.spec.ts`                |
+| Processing failure: redelivery approves the invoice once | `invoice-flow.spec.ts` › failures · `table-queue.spec.ts`                 |
+| Malformed message goes to `DEAD`, invoice unchanged      | `invoice-flow.spec.ts` › failures · `enrichment-completed.parser.spec.ts` |
 
 CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs lint, typecheck, build and all tests against a PostgreSQL service, and builds the Docker image.
 
@@ -357,18 +413,19 @@ All settings come from environment variables, validated at startup ([`src/shared
 
 ## 8. Out of Scope, and Why
 
-| Item                                                     | Why                                                                                                                                                                         |
-| -------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Real broker (SQS, RabbitMQ, Kafka)                       | Out of scope by the challenge. A PostgreSQL table simulates it with real redelivery; swapping only touches `TableQueue`.                                                    |
-| Real provider integration                                | The challenge asks for a simulated provider.                                                                                                                                |
-| Separate worker process                                  | Compose is API + PostgreSQL. `SKIP LOCKED` already makes several replicas safe; splitting is one flag away ([ADR 0008](docs/adr/0008-processo-unico-para-api-e-workers.md)). |
-| Invoice stuck in `ANALISE` if the provider never answers | Needs a reconciliation job that re-sends the request. The data for it already exists (`created_at`, outbox).                                                                |
-| Reprocessing `DEAD` messages                             | Manual today (SQL). A redrive command is missing.                                                                                                                           |
-| Cleanup of outbox, queue and inbox tables                | A production job would delete old rows. Today they grow without bound.                                                                                                      |
-| Authentication, rate limiting                            | Outside the requested domain.                                                                                                                                               |
-| Metrics and tracing                                      | Out of scope by the challenge. Logs carry `messageId` and `correlationId`, which is what a collector would use.                                                             |
-| Ordering between messages                                | Not needed: the first result wins and statuses are terminal.                                                                                                                |
-| CNPJ check digit in the result                           | The provider is the source of truth; only the format (14 digits) is validated.                                                                                              |
+| Item                                                     | Why                                                                                                                                                                                                                                                                   |
+| -------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Real broker (SQS, RabbitMQ, Kafka)                       | Out of scope by the challenge. A PostgreSQL table simulates it with real redelivery; swapping only touches `TableQueue`.                                                                                                                                              |
+| Real provider integration                                | The challenge asks for a simulated provider.                                                                                                                                                                                                                          |
+| Separate worker process                                  | Compose is API + PostgreSQL. `SKIP LOCKED` already makes several replicas safe; splitting is one flag away ([ADR 0008](docs/adr/0008-processo-unico-para-api-e-workers.md)).                                                                                          |
+| Invoice stuck in `ANALISE` if the provider never answers | Needs a reconciliation job that re-sends the request. The data for it already exists (`created_at`, outbox).                                                                                                                                                          |
+| Reprocessing `DEAD` messages                             | Manual today (SQL). A redrive command is missing.                                                                                                                                                                                                                     |
+| Cleanup of outbox, queue and inbox tables                | A production job would delete old rows. Today they grow without bound.                                                                                                                                                                                                |
+| Authentication, rate limiting                            | Outside the requested domain.                                                                                                                                                                                                                                         |
+| OpenAPI / Swagger                                        | Three HTTP routes, documented in [§3](#3-api). The critical contracts are asynchronous ([§4.3](#43-message-contracts), [ADR 0007](docs/adr/0007-contrato-das-mensagens.md)), which OpenAPI does not describe; AsyncAPI would be the right tool if the contracts grew. |
+| Metrics and tracing                                      | Out of scope by the challenge. Logs carry `messageId` and `correlationId`, which is what a collector would use.                                                                                                                                                       |
+| Ordering between messages                                | Not needed: the first result wins and statuses are terminal.                                                                                                                                                                                                          |
+| CNPJ check digit in the result                           | The provider is the source of truth; only the format (14 digits) is validated.                                                                                                                                                                                        |
 
 ---
 
@@ -376,7 +433,7 @@ All settings come from environment variables, validated at startup ([`src/shared
 
 I used Claude Code as an implementation, review and testing partner. It generated most of the code and tests and drafted the ADRs. I made the architectural decisions and validated every slice before committing it.
 
-**Decisions.** Every technical decision is recorded in [docs/adr](docs/adr/README.md) PT-BR to help others developers understand easily, with the options considered, the one chosen and why. Among them: simplifying the architecture of a previous reference project, the table-backed queue, the transactional outbox, answering `200` to a repeated key, and the idempotent consumer.
+**Decisions.** Every technical decision is recorded in [docs/adr](docs/adr/README.md), in PT-BR to help other developers understand them easily, with the options considered, the one chosen and why. Among them: simplifying the architecture of a previous reference project, the table-backed queue, the transactional outbox, answering `200` to a repeated key, and the idempotent consumer.
 
 **What the validation caught.**
 
