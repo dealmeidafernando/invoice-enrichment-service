@@ -155,7 +155,7 @@ describe('Table queue (real Postgres)', () => {
     };
     const drain = async () => {
       while ((await queue.consumeBatch(TOPIC, handler, { batchSize: 4 })).completed > 0) {
-        // keep going until the queue is empty
+        // Keep going until the queue is empty.
       }
     };
     await Promise.all([drain(), drain(), drain()]);

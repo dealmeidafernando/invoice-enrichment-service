@@ -441,13 +441,13 @@ All settings come from environment variables, validated at startup ([`src/shared
 
 I used Claude Code as an implementation, review and testing partner. It generated most of the code and tests and drafted the ADRs. I made the architectural decisions and validated every slice before committing it.
 
-**Decisions.** Every technical decision is recorded in [docs/adr](docs/adr/README.md), in PT-BR to help other developers understand them easily, with the options considered, the one chosen and why. Among them: simplifying the architecture of a previous reference project, the table-backed queue, the transactional outbox, answering `200` to a repeated key, and the idempotent consumer.
+**Decisions.** Every technical decision is recorded in [docs/adr](docs/adr/README.md), in PT-BR to help other developers understand them easily, with the options considered, the one chosen and why. Among them: a simplified layered architecture instead of full Clean Architecture, the table-backed queue, the transactional outbox, answering `200` to a repeated key, and the idempotent consumer.
 
 **What the validation caught.**
 
 - The generated Jest config referenced a `globalSetup` file that did not exist yet, so the suite failed before running any test. Fixed by adding the integration project only together with the database.
 - Supertest opened one server per request and raised `MaxListenersExceededWarning` in the 10-concurrent-requests test. Fixed by making the test app listen once.
-- A test for "second request after the invoice was decided" depended on the consumer before it existed. It was split: an intermediate version first, the full one together with the consumer.
+- The first version of the "same result message delivered twice" test queued both copies before any was processed and only checked the final status, so it did not show that a redelivery after the decision leaves the invoice untouched. It was rewritten to deliver once, snapshot the approved invoice, redeliver the same envelope (same `messageId`) and compare the whole invoice, `approvedAt` included. Turning deduplication off made both redelivery tests fail, which confirmed they protect the rule.
 - Running the API in Docker confirmed the outbox guarantee: an invoice registered while the background loops were off stayed in `ANALISE` with its message `PENDING`, and was approved as soon as the loops started.
 
 ### Working principle

@@ -1,6 +1,6 @@
 import { InvalidMoneyError } from '../errors/domain.error';
 
-/** Amount in BRL stored as integer cents (bigint). Never float: 0.1 + 0.2 !== 0.3. */
+/** Amount in BRL as integer cents (bigint), which avoids floating-point rounding. */
 export class Money {
   private constructor(readonly cents: bigint) {}
 
