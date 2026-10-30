@@ -369,7 +369,7 @@ grep -rni "required test" test
 | Processing failure: redelivery approves the invoice once | `invoice-flow.spec.ts` › failures · `table-queue.spec.ts`                 |
 | Malformed message goes to `DEAD`, invoice unchanged      | `invoice-flow.spec.ts` › failures · `enrichment-completed.parser.spec.ts` |
 
-CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs lint, typecheck, build and all tests against a PostgreSQL service, and builds the Docker image.
+CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs four jobs in parallel, so a failure points straight at what broke: **quality** (lint, typecheck, build), **unit** tests, **integration** tests against a PostgreSQL service, and the **docker** image build.
 
 ---
 
@@ -477,4 +477,4 @@ Claude reduced the cost of exploration and iteration; the final implementation r
 | [ADR 0006](docs/adr/0006-consumo-idempotente.md)                    | Idempotent consumption of the result message  |
 | [ADR 0007](docs/adr/0007-contrato-das-mensagens.md)                 | Message contracts                             |
 | [ADR 0008](docs/adr/0008-processo-unico-para-api-e-workers.md)      | Single process for API and workers            |
-| [docs/plans](docs/plans/2026-10-29-delivery-plan-design.md)         | Delivery plan: SDD            |
+| [docs/plans](docs/plans/2026-10-29-delivery-plan-design.md)         | Delivery plan: SDD                            |

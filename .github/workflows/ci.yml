@@ -6,7 +6,34 @@ on:
   pull_request:
 
 jobs:
-  test:
+  quality:
+    name: quality (lint, typecheck, build)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: yarn
+      - run: yarn install --frozen-lockfile
+      - run: yarn lint
+      - run: yarn typecheck
+      - run: yarn build
+
+  unit:
+    name: unit tests
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: yarn
+      - run: yarn install --frozen-lockfile
+      - run: yarn test:unit
+
+  integration:
+    name: integration tests (PostgreSQL)
     runs-on: ubuntu-24.04
     services:
       postgres:
@@ -31,12 +58,10 @@ jobs:
           node-version-file: .nvmrc
           cache: yarn
       - run: yarn install --frozen-lockfile
-      - run: yarn lint
-      - run: yarn typecheck
-      - run: yarn build
-      - run: yarn test
+      - run: yarn test:integration
 
   docker:
+    name: docker image
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
