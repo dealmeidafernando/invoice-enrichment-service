@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "Receives an NF-e access key, requests enrichment from an external provider through messaging, and approves or rejects the invoice.",
   "private": true,
-  "license": "MIT",
+  "license": "UNLICENSED",
   "packageManager": "yarn@1.22.22",
   "engines": {
     "node": ">=22"
