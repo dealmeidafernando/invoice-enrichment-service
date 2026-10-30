@@ -11,6 +11,7 @@ Registro das decisões técnicas relevantes do serviço. Cada ADR descreve o con
 | [0005](0005-chave-de-acesso-duplicada.md) | Chave de acesso duplicada | Aceito |
 | [0006](0006-consumo-idempotente.md) | Consumo idempotente da mensagem de volta | Aceito |
 | [0007](0007-contrato-das-mensagens.md) | Contrato das mensagens | Aceito |
+| [0008](0008-processo-unico-para-api-e-workers.md) | Processo único para API e workers | Aceito |
 
 ## Modelo
 
