@@ -1,5 +1,7 @@
 # Invoice Enrichment Service
 
+[![CI](https://github.com/dealmeidafernando/invoice-enrichment-service/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/dealmeidafernando/invoice-enrichment-service/actions/workflows/ci.yml)
+
 Intake and enrichment pipeline for Brazilian electronic invoices (NF-e), built as a technical challenge.
 
 A client sends the 44-digit **access key** of an invoice. The invoice is born incomplete, in `ANALISE`. An external provider looks up the key and returns the CNPJ, the amount, the issue date and whether the invoice is canceled. Only then is the invoice approved or rejected. The service:
@@ -475,4 +477,4 @@ Claude reduced the cost of exploration and iteration; the final implementation r
 | [ADR 0006](docs/adr/0006-consumo-idempotente.md)                    | Idempotent consumption of the result message  |
 | [ADR 0007](docs/adr/0007-contrato-das-mensagens.md)                 | Message contracts                             |
 | [ADR 0008](docs/adr/0008-processo-unico-para-api-e-workers.md)      | Single process for API and workers            |
-| [docs/plans](docs/plans/2026-10-29-delivery-plan-design.md)         | Delivery plan: slices and commits             |
+| [docs/plans](docs/plans/2026-10-29-delivery-plan-design.md)         | Delivery plan: SDD            |
