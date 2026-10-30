@@ -25,6 +25,7 @@ A simple, working solution that is easy to explain. The history is built in smal
 | 0006 | Idempotent consumer: inbox (`messageId`) + status guard + row lock                            |
 | 0007 | Message contracts: versioned envelope; `null` = rejection, malformed = `DEAD`                 |
 | 0008 | Single process: API and background loops together (compose = API + PostgreSQL)                |
+| 0009 | Explicit SQL with `pg` instead of an ORM                                                      |
 
 ## Slices and commits
 
