@@ -69,6 +69,7 @@ describe('OutboxRelay (real Postgres)', () => {
   it('concurrent relays never publish the same row twice', async () => {
     for (let i = 0; i < 10; i++) await writeToOutbox();
     const publish = queue.publish.bind(queue);
+    // A slow publish keeps the rows locked, so the three relays really compete for them.
     jest.spyOn(queue, 'publish').mockImplementation(async (topic, env) => {
       await sleep(10);
       await publish(topic, env);

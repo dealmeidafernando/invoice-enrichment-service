@@ -30,9 +30,8 @@ function invalidContract(reason: string): never {
 }
 
 /**
- * Validates the inbound envelope and converts it to domain types. Two kinds of problem:
- * - wrong format (shape, type, unreadable date, unknown version) -> non-retryable, goes to DEAD;
- * - missing field (null) -> a valid result; the domain rejects the invoice.
+ * A malformed message is a contract error and goes to DEAD.
+ * A missing field is a valid result: the domain rejects the invoice.
  */
 export function parseEnrichmentCompleted(envelope: unknown): {
   messageId: string;
@@ -66,12 +65,12 @@ export function parseEnrichmentCompleted(envelope: unknown): {
       },
     };
   } catch (error) {
+    // Invalid data will not become valid on retry: send it straight to DEAD.
     if (error instanceof DomainError) invalidContract(error.message);
     throw error;
   }
 }
 
-/** Inbound adapter for the result message: validates the contract and calls the use case. */
 @Injectable()
 export class EnrichmentCompletedConsumer {
   private readonly logger = new Logger(EnrichmentCompletedConsumer.name);

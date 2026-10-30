@@ -20,9 +20,7 @@ export interface ConsumeOptions {
   batchSize?: number;
   /** How long a delivery stays claimed. If the process dies, it becomes available again after this. */
   visibilitySeconds?: number;
-  /** After this many attempts the delivery goes to DEAD (dead-letter). */
   maxAttempts?: number;
-  /** Wait before redelivery: base * 2^(attempt-1), capped at 5 min. 0 = immediate (tests). */
   backoffBaseMs?: number;
 }
 
@@ -40,13 +38,8 @@ const DEFAULTS: Required<ConsumeOptions> = {
 };
 
 /**
- * Message broker simulated with the `queue_messages` table (a managed bus is out of scope).
- * Behaves like an at-least-once broker:
- * - publishing uses the pool, never the service's transaction (a real broker is another system);
- * - each row is a delivery; the same message may be delivered more than once;
- * - claiming uses FOR UPDATE SKIP LOCKED, so concurrent consumers never take the same delivery;
- * - ack only after the handler finishes; a failure reschedules with backoff (redelivery) or goes to DEAD;
- * - a delivery claimed by a process that died becomes available after the visibility timeout.
+ * Simulates an at-least-once broker. Each row is a delivery, so the same message may arrive twice.
+ * Publishing uses the pool, never the caller's transaction: a real broker is another system.
  */
 @Injectable()
 export class TableQueue {

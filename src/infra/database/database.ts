@@ -6,7 +6,6 @@ import { TransactionManager } from '../../domain';
 export const PG_POOL = Symbol('PG_POOL');
 
 /**
- * Runs SQL on the current transaction, if there is one, or on the pool.
  * The transaction travels through AsyncLocalStorage, so repositories never receive a client
  * and the domain interfaces stay free of `pg`.
  */
@@ -28,7 +27,6 @@ export class Database implements TransactionManager {
     return this.context.getStore() !== undefined;
   }
 
-  /** Opens a transaction. Nested calls reuse the outer one. */
   async run<T>(work: () => Promise<T>): Promise<T> {
     if (this.inTransaction()) return work();
 

@@ -10,10 +10,8 @@ export interface RelaySummary {
 }
 
 /**
- * Reads the outbox and publishes to the queue, outside the request.
- * - Publish failure: the message stays PENDING and is retried after a backoff. The invoice is untouched.
- * - Published but crashed before commit: published again (at-least-once). The consumer is idempotent.
- * - Concurrent relays never publish the same row: FOR UPDATE SKIP LOCKED.
+ * A failed publish stays PENDING and is retried after a backoff; the invoice is never touched.
+ * A crash between publish and commit publishes again (at-least-once): the consumer is idempotent.
  */
 @Injectable()
 export class OutboxRelay {

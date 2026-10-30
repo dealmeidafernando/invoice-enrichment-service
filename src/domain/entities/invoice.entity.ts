@@ -2,7 +2,7 @@ import { ResultForAnotherInvoiceError } from '../errors/domain.error';
 import { AccessKey } from '../value-objects/access-key';
 import { Money } from '../value-objects/money';
 
-/** Status values come from the business spec and are kept verbatim (public contract). */
+/** Values kept verbatim from the business spec: they are part of the public contract. */
 export enum InvoiceStatus {
   ANALISE = 'ANALISE',
   APROVADA = 'APROVADA',
@@ -16,10 +16,7 @@ export enum RejectionReason {
   MISSING_ISSUE_DATE = 'MISSING_ISSUE_DATE',
 }
 
-/**
- * What the provider returned, already validated for format.
- * `null` means "not informed": a business outcome (rejection), not a technical error.
- */
+/** `null` means "not informed by the provider": it leads to a rejection, not to an error. */
 export interface EnrichmentResult {
   readonly accessKey: AccessKey;
   readonly cnpj: string | null;
@@ -28,7 +25,6 @@ export interface EnrichmentResult {
   readonly canceled: boolean;
 }
 
-/** `IGNORED` means the invoice was already in a terminal status. */
 export type EnrichmentDecision = 'APPROVED' | 'REJECTED' | 'IGNORED';
 
 export interface InvoiceProps {
@@ -48,7 +44,6 @@ export interface InvoiceProps {
 export class Invoice {
   private constructor(private props: InvoiceProps) {}
 
-  /** A new invoice starts in ANALISE, with no approval date and no provider data. */
   static create(params: { id: string; accessKey: AccessKey; now: Date }): Invoice {
     return new Invoice({
       id: params.id,
@@ -65,17 +60,10 @@ export class Invoice {
     });
   }
 
-  /** Rebuilds from persistence. Does not validate transitions: the database is the source of truth. */
   static restore(props: InvoiceProps): Invoice {
     return new Invoice({ ...props, rejectionReasons: [...props.rejectionReasons] });
   }
 
-  /**
-   * - Terminal status: nothing changes (redelivery, late or second result).
-   * - Canceled, or missing CNPJ/amount/issue date: REJEITADA with every reason found.
-   * - Otherwise: APROVADA with an approval date.
-   * Received data is kept even on rejection, for auditing.
-   */
   applyResult(result: EnrichmentResult, now: Date): EnrichmentDecision {
     if (!result.accessKey.equals(this.props.accessKey)) {
       throw new ResultForAnotherInvoiceError(
@@ -87,6 +75,7 @@ export class Invoice {
     }
 
     const reasons = Invoice.rejectionReasonsFor(result);
+    // Received data is kept even on rejection, for auditing.
     this.props.cnpj = result.cnpj;
     this.props.amount = result.amount;
     this.props.issuedAt = result.issuedAt;

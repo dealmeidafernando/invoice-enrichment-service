@@ -149,6 +149,7 @@ describe('Table queue (real Postgres)', () => {
     for (let i = 0; i < total; i++) await queue.publish(TOPIC, envelope(TOPIC, { i }));
 
     const processed: string[] = [];
+    // A slow handler keeps deliveries claimed, so the three consumers really compete for them.
     const handler = async (d: Delivery) => {
       await sleep(5);
       processed.push(d.deliveryId);

@@ -2,11 +2,10 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { Pool } from 'pg';
 
-/** Arbitrary advisory lock id: replicas starting together must not migrate in parallel. */
+/** Replicas starting together must not migrate in parallel. The id is arbitrary. */
 const MIGRATIONS_LOCK_ID = 7_042_026;
 const MIGRATIONS_DIR = join(__dirname, 'migrations');
 
-/** Applies, in order, the .sql files not yet recorded in schema_migrations. */
 export async function runMigrations(pool: Pool): Promise<string[]> {
   const client = await pool.connect();
   const applied: string[] = [];

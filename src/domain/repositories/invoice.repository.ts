@@ -4,17 +4,14 @@ import { AccessKey } from '../value-objects/access-key';
 export const INVOICE_REPOSITORY = Symbol('InvoiceRepository');
 
 export interface InvoiceRepository {
-  /**
-   * Inserts unless the access key already exists. Uniqueness is enforced by a database
-   * constraint, not by "check then insert". Returns the stored invoice (new or existing).
-   */
+  /** Must be atomic: concurrent calls with the same key store a single invoice. */
   insertIfAbsent(invoice: Invoice): Promise<{ invoice: Invoice; created: boolean }>;
 
   findById(id: string): Promise<Invoice | null>;
 
-  /** Locks the row until the transaction ends (SELECT ... FOR UPDATE). Must run inside a transaction. */
+  /** Must run inside a transaction: the invoice stays locked until it ends. */
   findByAccessKeyForUpdate(accessKey: AccessKey): Promise<Invoice | null>;
 
-  /** Persists the outcome only while the invoice is still in ANALISE. Returns false when nothing changed. */
+  /** Writes only while the invoice is still in ANALISE; returns false otherwise. */
   saveResult(invoice: Invoice): Promise<boolean>;
 }

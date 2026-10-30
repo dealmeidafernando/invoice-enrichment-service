@@ -23,11 +23,6 @@ export class InvoicesController {
     private readonly getInvoice: GetInvoiceUseCase,
   ) {}
 
-  /**
-   * 202: the invoice was stored in ANALISE; enrichment continues asynchronously.
-   * 200: the access key already existed; same invoice, no new message (idempotent).
-   * 400: invalid access key.
-   */
   @Post()
   async create(
     @Body() body: { accessKey?: unknown } | undefined,

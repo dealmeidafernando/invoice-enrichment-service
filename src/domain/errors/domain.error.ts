@@ -1,4 +1,3 @@
-/** Business rule violation. HTTP maps it to 400; the result-message parser treats it as non-retryable. */
 export abstract class DomainError extends Error {
   abstract readonly code: string;
 

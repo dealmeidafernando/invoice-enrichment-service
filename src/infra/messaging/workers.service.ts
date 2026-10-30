@@ -12,11 +12,7 @@ import { FakeProvider } from './fake-provider';
 import { OutboxRelay } from './outbox-relay';
 import { TableQueue } from './table-queue';
 
-/**
- * Background loops running inside the API process: outbox relay, result consumer and,
- * when SIMULATE_PROVIDER is on, the fake provider. Each loop runs without overlap and
- * shutdown waits for the run in progress.
- */
+/** The next run is scheduled only after the current one ends, so a loop never overlaps itself. */
 @Injectable()
 export class WorkersService implements OnApplicationBootstrap, BeforeApplicationShutdown {
   private readonly logger = new Logger(WorkersService.name);

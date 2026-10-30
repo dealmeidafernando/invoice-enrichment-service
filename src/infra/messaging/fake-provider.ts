@@ -18,17 +18,13 @@ const COMPLETE_RESULT: FakeResult = {
   canceled: false,
 };
 
-/**
- * Simulates the external provider: consumes the outbound message and publishes the inbound one.
- * Not part of the service in production; used by the tests and the docker compose demo.
- */
+/** Stands in for the external provider in tests and in the compose demo. Never enabled in production. */
 @Injectable()
 export class FakeProvider {
   private readonly responses = new Map<string, FakeResult>();
 
   constructor(private readonly queue: TableQueue) {}
 
-  /** Sets what the provider answers for an access key. Default: a complete result. */
   respondWith(accessKey: string, result: Partial<FakeResult>): void {
     this.responses.set(accessKey, { ...COMPLETE_RESULT, ...result });
   }
