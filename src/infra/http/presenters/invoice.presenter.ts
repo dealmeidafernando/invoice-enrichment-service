@@ -1,10 +1,10 @@
-import { Invoice } from '../../../domain';
+import { Invoice, InvoiceStatus, RejectionReason } from '../../../domain';
 
 export interface InvoiceResponse {
   id: string;
   accessKey: string;
-  status: string;
-  rejectionReasons: string[];
+  status: InvoiceStatus;
+  rejectionReasons: RejectionReason[];
   cnpj: string | null;
   amount: string | null;
   issuedAt: string | null;

@@ -274,6 +274,19 @@ describe('Invoice flow (API + real Postgres)', () => {
       expect(rows[0].attempts).toBe(2);
     });
 
+    it('a write that changes no row rolls back instead of reporting a decision', async () => {
+      const res = await register(newAccessKey()).expect(202);
+      await t.runRelay();
+      await t.runProvider();
+      jest.spyOn(t.app.get<InvoiceRepository>(INVOICE_REPOSITORY), 'saveResult').mockResolvedValueOnce(false);
+
+      expect(await t.runConsumer()).toMatchObject({ rescheduled: 1 });
+      expect(await count('processed_messages')).toBe(0);
+
+      expect(await t.runConsumer()).toMatchObject({ completed: 1 });
+      expect(await getInvoice(res.body.id)).toMatchObject({ status: 'APROVADA' });
+    });
+
     it('a failure after the inbox write rolls it back, so the redelivery is still processed', async () => {
       const res = await register(newAccessKey()).expect(202);
       await t.runRelay();

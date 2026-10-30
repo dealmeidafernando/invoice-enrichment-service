@@ -24,7 +24,6 @@ export interface RegisterInvoiceInput {
 
 export interface RegisterInvoiceOutput {
   invoice: Invoice;
-  /** false when the key already existed: the same invoice is returned and no new message is written. */
   created: boolean;
 }
 
@@ -37,11 +36,10 @@ export class RegisterInvoiceUseCase {
   ) {}
 
   async execute(input: RegisterInvoiceInput): Promise<RegisterInvoiceOutput> {
-    // Throws InvalidAccessKeyError before touching the database (HTTP 400).
     const accessKey = AccessKey.create(input.accessKey);
     const candidate = Invoice.create({ id: randomUUID(), accessKey, now: new Date() });
 
-    // Invoice and outbound message commit together. The broker is never called here.
+    // Transactional outbox: the invoice and its outbound message commit together.
     return this.transaction.run(async () => {
       const { invoice, created } = await this.invoices.insertIfAbsent(candidate);
       if (created) {

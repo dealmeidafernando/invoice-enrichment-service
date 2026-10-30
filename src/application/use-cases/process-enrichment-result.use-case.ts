@@ -17,12 +17,7 @@ export interface ProcessEnrichmentResultInput {
   result: EnrichmentResult;
 }
 
-export type ProcessEnrichmentResultOutput =
-  | EnrichmentDecision
-  /** Unknown access key: the inbound message never creates an invoice. Nothing was written. */
-  | 'INVOICE_NOT_FOUND'
-  /** This messageId was already processed (redelivery). */
-  | 'DUPLICATE';
+export type ProcessEnrichmentResultOutput = EnrichmentDecision | 'INVOICE_NOT_FOUND' | 'DUPLICATE';
 
 @Injectable()
 export class ProcessEnrichmentResultUseCase {
@@ -44,8 +39,8 @@ export class ProcessEnrichmentResultUseCase {
       }
 
       const decision = invoice.applyResult(input.result, new Date());
-      if (decision !== 'IGNORED') {
-        await this.invoices.saveResult(invoice);
+      if (decision !== 'IGNORED' && !(await this.invoices.saveResult(invoice))) {
+        throw new Error(`Invoice ${invoice.id} left ANALISE while locked.`);
       }
       return decision;
     });
