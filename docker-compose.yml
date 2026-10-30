@@ -17,5 +17,24 @@ services:
       timeout: 3s
       retries: 20
 
+  # HTTP + background loops (outbox relay, result consumer and, for the demo, the fake provider).
+  api:
+    build: .
+    environment:
+      DATABASE_URL: postgres://invoices:invoices@postgres:5432/invoices
+      PORT: "3000"
+      WORKERS_ENABLED: "true"
+      SIMULATE_PROVIDER: "true"
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/health || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
 volumes:
   pgdata:

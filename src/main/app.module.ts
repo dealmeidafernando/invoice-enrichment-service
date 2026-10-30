@@ -13,6 +13,7 @@ import { EnrichmentCompletedConsumer } from '../infra/messaging/enrichment-compl
 import { FakeProvider } from '../infra/messaging/fake-provider';
 import { OutboxRelay } from '../infra/messaging/outbox-relay';
 import { TableQueue } from '../infra/messaging/table-queue';
+import { WorkersService } from '../infra/messaging/workers.service';
 import { PgInvoiceRepository } from '../infra/repositories/pg-invoice.repository';
 import { PgInboxRepository, PgOutboxRepository } from '../infra/repositories/pg-message.repository';
 import { ENV, Env, loadEnv } from '../shared/config/env';
@@ -42,6 +43,7 @@ import { ENV, Env, loadEnv } from '../shared/config/env';
     OutboxRelay,
     EnrichmentCompletedConsumer,
     FakeProvider,
+    WorkersService,
 
     { provide: APP_FILTER, useClass: DomainErrorFilter },
   ],
